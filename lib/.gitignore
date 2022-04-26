@@ -1,0 +1,8 @@
+bin/
+build/
+test/draft/
+.settings/
+
+.classpath
+.gradle
+.project
