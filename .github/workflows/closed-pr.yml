@@ -57,27 +57,27 @@ jobs:
         from: "ss-from/${{ steps.ready.outputs.issue-no }}"
         to: "ss-to/${{ steps.ready.outputs.issue-no }}"
 
-  # termination:
+  termination:
 
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   needs: [ revise-comments ]
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [ revise-comments ]
 
-  #   steps:
+    steps:
   
-  #   - uses: actions/checkout@v2
-  #     with:
-  #       fetch-depth: 0
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
-  #   - name: Prepare vars
-  #     id: ready
-  #     shell: bash
-  #     run: |
-  #       branch=${{ github.head_ref }}
-  #       echo "::set-output name=issue-no::${branch#feature/}"
+    - name: Prepare vars
+      id: ready
+      shell: bash
+      run: |
+        branch=${{ github.head_ref }}
+        echo "::set-output name=issue-no::${branch#feature/}"
 
-  #   - name: Delete snapshot
-  #     run: |
-  #       git push origin 'ss-from/'${{ steps.ready.outputs.issue-no }} --delete
-  #       git push origin 'ss-to/'${{ steps.ready.outputs.issue-no }} --delete
+    - name: Delete snapshot
+      run: |
+        git push origin 'ss-from/'${{ steps.ready.outputs.issue-no }} --delete
+        git push origin 'ss-to/'${{ steps.ready.outputs.issue-no }} --delete
   
