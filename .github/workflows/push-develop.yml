@@ -21,6 +21,9 @@ jobs:
       with:
         workflowName: 'Post processing of PR'
         timeoutSec: 1200
+
+    - uses: debug
+      run: sleep 10
     
     - uses: actions/checkout@v2
       with:
@@ -31,6 +34,9 @@ jobs:
       run: |
         git checkout develop
         git submodule update --remote
+
+    - name: debug
+      run: git log --oneline | head -n3
 
     - name: Set up JDK 15
       uses: actions/setup-java@v2
@@ -50,7 +56,9 @@ jobs:
       run: ./test.sh
 
     - name: Push if needed
-      run: git diff --exit-code || (git add . && git commit -m "BY-CI" && git push origin HEAD)
+      run: |
+        git diff --exit-code --ignore-cr-at-eol --ignore-space-at-eol \
+        || (git add . && git commit -m "BY-CI" && git push origin HEAD)
 
     - name: Push to master
       if: success()
