@@ -22,7 +22,7 @@ jobs:
         workflowName: 'Post processing of PR'
         timeoutSec: 1200
 
-    - uses: debug
+    - name: debug
       run: sleep 10
     
     - uses: actions/checkout@v2
