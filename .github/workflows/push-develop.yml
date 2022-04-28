@@ -6,37 +6,18 @@ on:
 
 jobs:
 
-  main:
-
+  dev-ci:
     runs-on: ubuntu-latest
-
     steps:
-
-    - name: Set git configs
-      run: |
-        git config --global user.email "begyyal@gmail.com"
-        git config --global user.name "begyyal-ghost"
 
     - uses: begyyal/act_await_wf_execution@v0.1
       with:
         workflowName: 'Post processing of PR'
         timeoutSec: 1200
-
-    - name: debug
-      run: sleep 10
     
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
         submodules: true
-
-    - name: Setup git condition
-      run: |
-        git checkout develop
-        git submodule update --remote
-
-    - name: debug
-      run: git log --oneline | head -n3
 
     - name: Set up JDK 15
       uses: actions/setup-java@v2
@@ -54,6 +35,43 @@ jobs:
 
     - name: Test
       run: ./test.sh
+
+  push-to-master:
+    runs-on: ubuntu-latest
+    needs: [ dev-ci ]
+    steps:
+
+    - name: Set git configs
+      run: |
+        git config --global user.email "begyyal@gmail.com"
+        git config --global user.name "begyyal-ghost"
+    
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+
+    - name: Apply PAT
+      run: |
+      token64=$(printf "%s" "x-access-token:${{ secrets.ADMIN_PAT }}" | base64)
+      git config --global http.${{ github.server_url }}/.extraheader "AUTHORIZATION: basic $token64"
+
+    - name: Setup git condition
+      run: git submodule update --remote
+
+    - name: Set up JDK 15
+      uses: actions/setup-java@v2
+      with:
+        java-version: '15'
+        distribution: 'adopt'
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x ./cmd/gradlew
+
+    - name: Build with Gradle
+      run: |
+        ./cmd/gradlew build -b ./lib/build.gradle -x test
+        ./cmd/gradlew build -b ./cmd/build.gradle -x test
 
     - name: Push if needed
       run: |
