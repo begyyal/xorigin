@@ -53,8 +53,8 @@ jobs:
 
     - name: Apply PAT
       run: |
-      token64=$(printf "%s" "x-access-token:${{ secrets.ADMIN_PAT }}" | base64)
-      git config --global http.${{ github.server_url }}/.extraheader "AUTHORIZATION: basic $token64"
+        token64=$(printf "%s" "x-access-token:${{ secrets.ADMIN_PAT }}" | base64)
+        git config --global http.${{ github.server_url }}/.extraheader "AUTHORIZATION: basic $token64"
 
     - name: Setup git condition
       run: git submodule update --remote
