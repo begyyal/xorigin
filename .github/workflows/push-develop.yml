@@ -48,7 +48,10 @@ jobs:
         submodules: true
 
     - name: Setup git condition
-      run: git submodule update --remote
+      run: |
+        git submodule update --remote
+        git config --global user.email "begyyal@gmail.com"
+        git config --global user.name "begyyal-ghost"
 
     - name: Set up JDK 15
       uses: actions/setup-java@v2
