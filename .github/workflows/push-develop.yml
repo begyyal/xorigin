@@ -41,20 +41,11 @@ jobs:
     needs: [ dev-ci ]
     steps:
 
-    - name: Set git configs
-      run: |
-        git config --global user.email "begyyal@gmail.com"
-        git config --global user.name "begyyal-ghost"
-    
     - uses: actions/checkout@v2
       with:
+        token: ${{ secrets.ADMIN_PAT }}
         fetch-depth: 0
         submodules: true
-
-    - name: Apply PAT
-      run: |
-        token64=$(printf "%s" "x-access-token:${{ secrets.ADMIN_PAT }}" | base64)
-        git config --global http.${{ github.server_url }}/.extraheader "AUTHORIZATION: basic $token64"
 
     - name: Setup git condition
       run: git submodule update --remote

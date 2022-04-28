@@ -27,7 +27,6 @@ jobs:
         git checkout ${{ github.base_ref }}
         git checkout -b $snapshot
         git push origin $snapshot
-        git log --oneline
 
     - name: Create snapshot-to
       if: ${{ startsWith(github.head_ref, 'feature/') }}
@@ -39,7 +38,6 @@ jobs:
         git checkout ${{ github.head_ref }}
         git checkout -b $snapshot
         git push origin $snapshot
-        git log --oneline
 
     - name: Prepare conditions
       id: cond

@@ -50,12 +50,25 @@ jobs:
       with:
         workflowName: 'Update process of PR'
 
-    - uses: begyyal/act_revise_comments@v1
+    - name: Clone repo
+      run: |
+        git clone https://github.com/begyyal/act_revise_comments.git
+        git fetch
+        git checkout debug
+
+    - uses: ./act_revise_comments
       with:
         prefix: "#${{ steps.ready.outputs.issue-no }}"
         branch: ${{ github.base_ref }}
         from: "ss-from/${{ steps.ready.outputs.issue-no }}"
         to: "ss-to/${{ steps.ready.outputs.issue-no }}"
+
+    # - uses: begyyal/act_revise_comments@v1
+    #   with:
+    #     prefix: "#${{ steps.ready.outputs.issue-no }}"
+    #     branch: ${{ github.base_ref }}
+    #     from: "ss-from/${{ steps.ready.outputs.issue-no }}"
+    #     to: "ss-to/${{ steps.ready.outputs.issue-no }}"
 
   termination:
 
