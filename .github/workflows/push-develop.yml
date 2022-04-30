@@ -6,6 +6,23 @@ on:
 
 jobs:
 
+  revise-comments:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Prepare vars
+      id: ready
+      shell: bash
+      run: |
+        branch=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
+        echo "::set-output name=issue-no::${branch#feature/}"
+
+    - name: Revise comments
+      if: ${{ steps.ready.outputs.issue-no != '' }}
+      uses: begyyal/act_revise_comments@v1
+      with:
+        prefix: "#${{ steps.ready.outputs.issue-no }}"
+
   dev-ci:
     runs-on: ubuntu-latest
     steps:
@@ -38,18 +55,16 @@ jobs:
 
   push-to-master:
     runs-on: ubuntu-latest
-    needs: [ dev-ci ]
+    needs: [ revise-comments, dev-ci ]
     steps:
 
     - uses: actions/checkout@v2
       with:
-        token: ${{ secrets.ADMIN_PAT }}
         fetch-depth: 0
         submodules: true
 
     - name: Setup git condition
       run: |
-        git submodule update --remote
         git config --global user.email "begyyal@gmail.com"
         git config --global user.name "begyyal-ghost"
 
