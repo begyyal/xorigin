@@ -5,15 +5,11 @@ on:
     types: [ opened ]
 
 jobs:
-  main:
 
+  main:
     runs-on: ubuntu-latest
 
     steps:
-    
-    - uses: begyyal/act_await_wf_execution@v0.1
-      with:
-        workflowName: 'CI'
 
     - uses: actions/checkout@v2
       with:

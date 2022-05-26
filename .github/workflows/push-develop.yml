@@ -22,6 +22,7 @@ jobs:
         fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
         tmpb=dev-tmp/${fb#feature/}
         git checkout ${{ github.ref_name }}
+        git push origin $tmpb -d --quiet || :
         git checkout -b $tmpb
         echo "::set-output name=issue-no::${fb#feature/}"
         echo "::set-output name=tmp::$tmpb"
@@ -51,7 +52,7 @@ jobs:
     - name: Push dev-tmp
       id: code-update
       run: |
-        applied=$(git diff --exit-code --ignore-cr-at-eol --ignore-space-at-eol && : || echo 1)
+        applied=$(git diff --exit-code --ignore-cr-at-eol --ignore-space-at-eol --quiet || echo 1)
         [ -z $applied ] || (git add . && git commit -m "BY-CI")
         echo "::set-output name=applied::${applied}"
         git push origin HEAD
@@ -68,16 +69,44 @@ jobs:
           https://api.github.com/repos/${{ github.repository }}/statuses/${head} \
           -d '{"state":"success","context":"ci-passed"}'
 
+    - name: Await sequentially
+      uses: begyyal/act_await_workflow_runs@v1
+      with:
+        workflowName: CI
+
     - name: Push dev if needed
+      id: push-dev
       if: ${{ steps.code-update.outputs.applied != '' }}
       run: |
         git checkout ${{ github.ref_name }}
         git cherry-pick ${{ steps.status-checks.outputs.head }}
-        git push origin ${{ github.ref_name }}
+        git push origin ${{ github.ref_name }} || conflict=1
+        echo "::set-output name=conflict::$conflict"
+
+    - name: Handle conflict
+      id: handle-conflict
+      if: ${{ steps.push-dev.outputs.conflict != '' }}
+      run: |
+        git checkout ${{ steps.ready.outputs.tmp }}
+        git reset --hard HEAD^
+        head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
+        echo "::set-output name=head::${head}"
+        curl \
+          -X POST \
+          -H "AUTHORIZATION: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/statuses/${head} \
+          -d '{"state":"success","context":"ci-passed"}'
 
     - name: Push master
       run: |
+        head=${{ steps.handle-conflict.outputs.head }}
+        [ -z "$head" ] && head=${{ steps.status-checks.outputs.head }} || :
         git fetch
         git checkout master
-        git cherry-pick $(git log ${{ steps.ready.outputs.tmp }} ${{ github.event.before }}..HEAD --pretty=oneline | cut -d " " -f 1 | tac)
+        git cherry-pick $(git log ${{ steps.ready.outputs.tmp }} ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
         git push origin master
+
+    - name: Termination
+      if: always()
+      run: git push ${{ steps.ready.outputs.tmp }} -d
