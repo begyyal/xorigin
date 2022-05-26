@@ -17,22 +17,26 @@ jobs:
 
     - name: Prepare conditions
       id: ready
-      shell: bash
       run: |
-        fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
-        tmpb=dev-tmp/${fb#feature/}
         git checkout ${{ github.ref_name }}
+        fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
+        echo "::set-output name=issue-no::${fb#feature/}"
+
+    - name: Create temp branch
+      id: temp
+      if: ${{ steps.ready.outputs.issue-no != '' }}
+      run: |
+        tmpb=dev-tmp/${{ steps.ready.outputs.issue-no }}
         git push origin $tmpb -d --quiet || :
         git checkout -b $tmpb
-        echo "::set-output name=issue-no::${fb#feature/}"
-        echo "::set-output name=tmp::$tmpb"
+        echo "::set-output name=branch::$tmpb"
 
     - name: Revise comments
       if: ${{ steps.ready.outputs.issue-no != '' }}
       uses: begyyal/act_revise_comments@v1
       with:
         prefix: "#${{ steps.ready.outputs.issue-no }}"
-        branch: ${{ steps.ready.outputs.tmp }}
+        branch: ${{ steps.temp.outputs.branch }}
 
     - name: Set up JDK 15
       uses: actions/setup-java@v2
@@ -51,6 +55,7 @@ jobs:
 
     - name: Push dev-tmp
       id: code-update
+      if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         applied=$(git diff --exit-code --ignore-cr-at-eol --ignore-space-at-eol --quiet || echo 1)
         [ -z $applied ] || (git add . && git commit -m "BY-CI")
@@ -59,6 +64,7 @@ jobs:
 
     - name: Mark success of status checks
       id: status-checks
+      if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
         echo "::set-output name=head::${head}"
@@ -87,7 +93,7 @@ jobs:
       id: handle-conflict
       if: ${{ steps.push-dev.outputs.conflict != '' }}
       run: |
-        git checkout ${{ steps.ready.outputs.tmp }}
+        git checkout ${{ steps.temp.outputs.branch }}
         git reset --hard HEAD^
         head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
         echo "::set-output name=head::${head}"
@@ -102,11 +108,16 @@ jobs:
       run: |
         head=${{ steps.handle-conflict.outputs.head }}
         [ -z "$head" ] && head=${{ steps.status-checks.outputs.head }} || :
+        [ -z "$head" ] && head=${{ github.sha }} || :
+        branch=${{ steps.temp.outputs.branch }}
+        [ -z "$branch" ] && branch=${{ github.ref_name }} || :
         git fetch
         git checkout master
-        git cherry-pick $(git log ${{ steps.ready.outputs.tmp }} ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
+        git cherry-pick $(git log $branch ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
         git push origin master
 
     - name: Termination
       if: always()
-      run: git push ${{ steps.ready.outputs.tmp }} -d
+      run: |
+        tmpb=${{ steps.temp.outputs.branch }}
+        [ -n "$tmpb" ] && git push $tmpb -d || :
