@@ -16,6 +16,16 @@ jobs:
       with:
         submodules: true
 
+    - name: Prepare conditions
+      id: cond
+      shell: bash
+      run: |
+        do_test=$(./.github/workflows/sh/check_if_need_test.sh)
+        echo "::set-output name=do-test::${do_test}"
+
+    - name: debug
+      run: echo ${{ toJSON(github) }}
+
     - name: Set up JDK 15
       if: ${{ steps.cond.outputs.do-test }}
       uses: actions/setup-java@v2
@@ -39,10 +49,9 @@ jobs:
 
     - name: Mark success of status checks
       run: |
-        head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
         curl \
           -X POST \
           -H "AUTHORIZATION: token ${{ github.token }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/statuses/${head} \
+          https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
           -d '{"state":"success","context":"ci-passed"}'
