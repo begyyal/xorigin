@@ -11,72 +11,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Checkout head
+    - name: Checkout
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
         submodules: true
-        ref: ${{ github.head_ref }}
-
-    - name: Checkout base
-      if: ${{ startsWith(github.head_ref, 'feature/') }}
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        submodules: true
-        ref: ${{ github.base_ref }}
-        path: ./temp
-
-    - name: Create snapshot-from
-      if: ${{ startsWith(github.head_ref, 'feature/') }}
-      shell: bash
-      run: |
-        cd ./temp
-        branch=${{ github.head_ref }}
-        snapshot=ss-from${branch#feature}
-        [ -n "$(git branch -r | sed 's/ //g' | grep -e ^origin/$snapshot)" ] && git push origin $snapshot --delete
-        git checkout -b $snapshot
-        git push origin $snapshot
-        cd ../ && rm -rdf ./temp
-
-    - name: Create snapshot-to
-      if: ${{ startsWith(github.head_ref, 'feature/') }}
-      shell: bash
-      run: |
-        branch=${{ github.head_ref }}
-        snapshot=ss-to${branch#feature}
-        [ -n "$(git branch -r | sed 's/ //g' | grep -e ^origin/$snapshot)" ] && git push origin $snapshot --delete
-        git checkout -b $snapshot
-        git push origin $snapshot
 
     - name: Prepare conditions
-      id: cond
-      shell: bash
+      id: cond1
+      if: ${{ github.event.action == 'opened' }}
       run: |
-        do_test="$(./.github/workflows/sh/do_test.sh ${{ github.base_ref }} ${{ github.head_ref }})"
-        echo "::set-output name=do-test::${do_test}"
+        do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.base_ref }} ${{ github.head_ref }})
+        echo "::set-output name=do-test::${do_test:-false}"
 
-    - name: Update submodules
-      if: ${{ steps.cond.outputs.do-test }}
-      run: git submodule update --remote
+    - name: Prepare conditions
+      id: cond2
+      if: ${{ github.event.action == 'synchronize' }}
+      run: |
+        do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.event.before }} ${{ github.event.after }})
+        echo "::set-output name=do-test::${do_test:-false}"
 
     - name: Set up JDK 15
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       uses: actions/setup-java@v2
       with:
         java-version: '15'
         distribution: 'adopt'
 
     - name: Grant execute permission for gradlew
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       run: chmod +x ./cmd/gradlew
 
     - name: Build with Gradle
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       run: |
         ./cmd/gradlew build -b ./lib/build.gradle -x test
         ./cmd/gradlew build -b ./cmd/build.gradle -x test
 
     - name: Test
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       run: ./test.sh
+
+    - name: Mark success of status checks
+      run: |
+        curl \
+          -X POST \
+          -H "AUTHORIZATION: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -d '{"state":"success","context":"ci-passed"}'

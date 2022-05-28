@@ -2,23 +2,18 @@ name: Create feature branch
 
 on:
   issues:
-    types: [opened]
+    types: [ opened ]
 
 jobs:
-  main:
 
+  main:
     runs-on: ubuntu-latest
 
     steps:
-    
+
     - uses: actions/checkout@v2
       with:
         ref: develop
-
-    - name: Set git configs
-      run: |
-        git config --global user.email "begyyal@gmail.com"
-        git config --global user.name "begyyal-ghost"
     
     - name: Create branch
       run: |
