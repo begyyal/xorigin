@@ -22,6 +22,8 @@ jobs:
       id: cond1
       if: ${{ github.event.action == 'opened' }}
       run: |
+        echo ${{ github.event_name == 'dispatch'  }}
+        [ ${{ github.event_name == 'dispatch'  }} == true ] && do_test=true || \
         do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.base_ref }} ${{ github.head_ref }})
         echo "::set-output name=do-test::${do_test:-false}"
 
@@ -29,25 +31,27 @@ jobs:
       id: cond2
       if: ${{ github.event.action == 'synchronize' }}
       run: |
+        echo ${{ github.event_name == 'dispatch'  }}
+        [ ${{ github.event_name == 'dispatch'  }} == true ] && do_test=true || \
         do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.event.before }} ${{ github.event.after }})
         echo "::set-output name=do-test::${do_test:-false}"
 
     - name: Set up JDK 15
-      if: ${{ github.event_name == 'dispatch' || steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
+      if: ${{ steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
       uses: actions/setup-java@v2
       with:
         java-version: '15'
         distribution: 'adopt'
 
     - name: Grant execute permission for gradlew
-      if: ${{ github.event_name == 'dispatch' || steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
+      if: ${{ steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
       run: |
         chmod +x ./cmd/gradlew
         ./cmd/gradlew build -b ./lib/build.gradle -x test
         ./cmd/gradlew build -b ./cmd/build.gradle -x test
 
     - name: Test
-      if: ${{ github.event_name == 'dispatch' || steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
+      if: ${{ steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
       run: ./test.sh
 
     - name: Mark success of status checks
