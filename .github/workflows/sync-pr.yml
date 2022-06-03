@@ -22,8 +22,7 @@ jobs:
       id: cond1
       if: ${{ github.event.action == 'opened' }}
       run: |
-        echo ${{ github.event_name == 'dispatch'  }}
-        [ ${{ github.event_name == 'dispatch'  }} == true ] && do_test=true || \
+        [ ${{ github.event_name == 'dispatch' }} == true ] && do_test=true || \
         do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.base_ref }} ${{ github.head_ref }})
         echo "::set-output name=do-test::${do_test:-false}"
 
@@ -31,8 +30,7 @@ jobs:
       id: cond2
       if: ${{ github.event.action == 'synchronize' }}
       run: |
-        echo ${{ github.event_name == 'dispatch'  }}
-        [ ${{ github.event_name == 'dispatch'  }} == true ] && do_test=true || \
+        [ ${{ github.event_name == 'dispatch' }} == true ] && do_test=true || \
         do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.event.before }} ${{ github.event.after }})
         echo "::set-output name=do-test::${do_test:-false}"
 
