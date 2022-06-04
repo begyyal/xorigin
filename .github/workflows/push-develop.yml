@@ -113,7 +113,7 @@ jobs:
         branch=${{ steps.temp.outputs.branch }}
         [ -z "$branch" ] && branch=${{ github.ref_name }} || :
         git fetch
-        git checkout master
+        git checkout -f master
         git cherry-pick $(git log $branch ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
         git push origin master
 
