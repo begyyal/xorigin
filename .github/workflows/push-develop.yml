@@ -118,7 +118,6 @@ jobs:
         git push origin master
 
     - name: Termination
-      if: always()
       run: |
         tmpb=${{ steps.temp.outputs.branch }}
         [ -n "$tmpb" ] && git push $tmpb -d || :
