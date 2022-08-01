@@ -14,6 +14,8 @@ af=$2
 
 git diff $bf..$af --name-only | 
 sort > ${tmp}diff
+[ -n "$(cat ${tmp}diff | head -n 1)" ] || end 0
+
 cat > ${tmp}ig_pattern << EOF
 ^(.+\/)?README.md$
 ^(.+\/)?LICENSE$

@@ -20,6 +20,7 @@ echo $head_tree >&2
 touch ${tmp}hits
 git fetch
 git branch -a | 
+tr -d " " |
 grep -E '^remotes/origin/'${prefix}'/[1-9][0-9]*$' |
 while read b; do
     bc=$(git log $b --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
