@@ -12,6 +12,7 @@ function end(){
 bf=$1
 af=$2
 
+git fetch
 git diff $bf..$af --name-only | 
 sort > ${tmp}diff
 [ -n "$(cat ${tmp}diff | head -n 1)" ] || end 0
