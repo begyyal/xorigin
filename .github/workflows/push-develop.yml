@@ -143,7 +143,7 @@ jobs:
         [ -z "${{ steps.ready.outputs.issue-no }}" ] || bname=feature/${{ steps.ready.outputs.issue-no }}
         [ -z "$bname" ] || bname=dev-rb/${{ github.run_number }}
         git fetch
-        git checkout -b $bname 2>/dev/null && git cherry-pick ${{ github.event.before }}..${{ github.event.after }}
+        git checkout -b $bname 2>/dev/null && git cherry-pick ${{ github.event.before }}..${{ github.event.after }} || :
         git push origin $fb
 
     - name: Termination
