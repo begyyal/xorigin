@@ -42,7 +42,6 @@ jobs:
         branch: ${{ steps.temp.outputs.branch }}
 
     - name: Fetch dev-tmp
-      id: code-update
       if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         git checkout develop
