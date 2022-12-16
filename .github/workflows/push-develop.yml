@@ -19,6 +19,8 @@ jobs:
     - name: Prepare conditions
       id: ready
       run: |
+        git config --global user.email "begyyal@gmail.com"
+        git config --global user.name "begyyal-ghost"
         git checkout ${{ github.ref_name }}
         fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
         echo "::set-output name=issue-no::${fb#feature/}"
@@ -117,7 +119,35 @@ jobs:
         git cherry-pick $(git log $branch ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
         git push origin master
 
+    - name: Prepare to close issue
+      id: ready-closing
+      if: ${{ steps.ready.outputs.issue-no != '' }}
+      run: |
+        git clone https://github.com/begyyal/act_access_ghra.git
+        issue_url_base=${{ github.event.pull_request.issue_url }}
+        echo "::set-output name=issue-url::${issue_url_base%/*}/${{steps.ready.outputs.issue-no}}"
+
+    - name: Close issue
+      if: ${{ steps.ready.outputs.issue-no != '' }}
+      uses: ./act_access_ghra
+      with:
+        url: ${{ steps.ready-closing.outputs.issue-url }}
+        method: 'PATCH'
+        args: '{"state":"closed"}'
+
+    - name: Rollback
+      if: failure()
+      run: |
+        git checkout develop
+        git reset --hard ${{ github.event.before }}
+        [ -z "${{ steps.ready.outputs.issue-no }}" ] || bname=feature/${{ steps.ready.outputs.issue-no }}
+        [ -z "$bname" ] || bname=dev-rb/${{ github.run_number }}
+        git fetch
+        git checkout -b $bname 2>/dev/null && git cherry-pick ${{ github.event.before }}..${{ github.event.after }} || :
+        git push origin $fb
+
     - name: Termination
+      if: always()
       run: |
         tmpb=${{ steps.temp.outputs.branch }}
         [ -n "$tmpb" ] && git push $tmpb -d || :
