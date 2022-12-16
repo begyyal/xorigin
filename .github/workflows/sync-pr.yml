@@ -31,6 +31,7 @@ jobs:
       id: cond2
       if: ${{ github.event.action == 'synchronize' }}
       run: |
+        git branch
         [ ${{ github.event_name == 'dispatch' }} == true ] && do_test=true || \
         do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.event.before }} ${{ github.event.after }})
         echo "::set-output name=do-test::${do_test:-false}"
