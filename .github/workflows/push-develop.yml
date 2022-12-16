@@ -24,7 +24,7 @@ jobs:
         fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
         echo "::set-output name=issue-no::${fb#feature/}"
 
-    - name: Create temp branch
+    - name: Create dev-tmp
       id: temp
       if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
@@ -40,6 +40,15 @@ jobs:
       with:
         prefix: "#${{ steps.ready.outputs.issue-no }}"
         branch: ${{ steps.temp.outputs.branch }}
+
+    - name: Fetch dev-tmp
+      id: code-update
+      if: ${{ steps.ready.outputs.issue-no != '' }}
+      run: |
+        git checkout develop
+        git branch -D ${{ steps.temp.outputs.branch }}
+        git fetch 
+        git checkout ${{ steps.temp.outputs.branch }}
 
     - name: Set up JDK 15
       uses: actions/setup-java@v2
@@ -61,9 +70,8 @@ jobs:
       if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         applied=$(git diff --exit-code --ignore-cr-at-eol --ignore-space-at-eol --quiet || echo 1)
-        [ -z $applied ] || (git add . && git commit -m "BY-CI")
+        [ -z $applied ] || (git add . && git commit -m "BY-CI" && git push origin HEAD)
         echo "::set-output name=applied::${applied}"
-        git push origin HEAD
 
     - name: Mark success of status checks
       id: status-checks
