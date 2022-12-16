@@ -31,6 +31,7 @@ jobs:
         tmpb=dev-tmp/${{ steps.ready.outputs.issue-no }}
         git push origin $tmpb -d --quiet || :
         git checkout -b $tmpb
+        git push origin $tmpb
         echo "::set-output name=branch::$tmpb"
 
     - name: Revise comments
@@ -140,7 +141,7 @@ jobs:
         git checkout develop
         git reset --hard ${{ github.event.before }}
         [ -z "${{ steps.ready.outputs.issue-no }}" ] || bname=feature/${{ steps.ready.outputs.issue-no }}
-        [ -z "$bname" ] || bname=dev-rb/${{ github.run_number }}
+        [ -n "$bname" ] || bname=dev-rb/${{ github.run_number }}
         git fetch
         git checkout -b $bname 2>/dev/null && git cherry-pick ${{ github.event.before }}..${{ github.event.after }} || :
         git push origin $fb
@@ -149,4 +150,4 @@ jobs:
       if: always()
       run: |
         tmpb=${{ steps.temp.outputs.branch }}
-        [ -n "$tmpb" ] && git push $tmpb -d || :
+        [ -n "$tmpb" ] && git push origin $tmpb -d || :
