@@ -16,6 +16,7 @@ prefix=$1
 head_tree=$($shjp $2 -t head_commit.tree_id)
 
 echo $head_tree >&2
+git branch -a
 
 touch ${tmp}hits
 git fetch
