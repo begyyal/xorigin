@@ -8,13 +8,8 @@ jobs:
 
   dev-ci:
     runs-on: ubuntu-latest
-    # デフォルトトークンでブランチ保護をbypassできる仕様待ち。やめたい
-    if: ${{ github.actor == 'begyyal' }}
 
     steps:
-
-    - name: debug1
-      run: echo ${{ github.actor }}
 
     - uses: actions/checkout@v3
       with:
@@ -80,7 +75,7 @@ jobs:
       if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         git clone https://github.com/begyyal/act_access_ghra.git
-        issue_url_base=${{ github.event.pull_request.issue_url }}
+        issue_url_base=${{ github.event.repository.issue_url }}
         echo "::set-output name=issue-url::${issue_url_base%/*}/${{steps.ready.outputs.issue-no}}"
 
     - name: Close issue

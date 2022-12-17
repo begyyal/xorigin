@@ -38,6 +38,7 @@ $shjp -t tree_id > ${tmp}target_trees
 [ $? != 0 ] && end 1 || :  
 
 first_tree=$(cat ${tmp}target_trees | head -n 1)
+last_tree=$(cat ${tmp}target_trees | tail -n 1)
 if [ -z "$first_tree" ]; then
   echo 'The target commits of the processing dont exist.' >&2
   end 1
@@ -73,19 +74,23 @@ function main(){
     tree=$(echo "$props" | grep ^tree | cut -d " " -f 2)
     author=$(echo "$props" | grep ^author | cut -d " " -f 2-)
 
-    comments=$(git cat-file -p $commit_hash | awk '{if(flag==1){print $0}else if($0==""){flag=1}}')
+    git cat-file -p $commit_hash | awk '{if(flag==1){print $0}else if($0==""){flag=1}}' > ${tmp}comments
     if [ -z $started ]; then
-      started=$(echo "$comments" | awk '{if(NR==1 && $0 !~ /^('$prefix').*$/){print "1"}}')
+      started=$(cat ${tmp}comments | awk '{if(NR==1 && $0 !~ /^('$prefix').*$/){print "1"}}')
       [ -z $started ] && continue || :
     fi
 
     target_flag=$(cat ${tmp}target_trees | grep ^$tree)
     if [ -n $target_flag ]; then
-      comments=$(echo "$comments" | 
-      awk -v prefix="${prefix} " '{if(NR==1 && $0 !~ /^('$prefix').*$/){print prefix $0}else{print}}')
+      cat ${tmp}comments > ${tmp}comments_cp
+      cat ${tmp}comments_cp | 
+      awk -v prefix="${prefix} " '{if(NR==1 && $0 !~ /^('$prefix').*$/){print prefix $0}else{print}}' > ${tmp}comments 
+      if [ "$tree" == "$last_tree" -a "$(cat ${tmp}comments | tail -n 1)" != "[skip ci]" ]; then
+        echo "[skip ci]" >> ${tmp}comments 
+      fi
     fi
 
-    git commit-tree $tree -p $parent -m "$comments" > $head_refs
+    git commit-tree $tree -p $parent -m "$(cat ${tmp}comments)" > $head_refs
     git reset --hard HEAD
     git commit --amend --author="$author" -C HEAD --allow-empty
     parent=$(cat $head_refs)
