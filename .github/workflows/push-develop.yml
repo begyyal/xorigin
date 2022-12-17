@@ -75,7 +75,7 @@ jobs:
       if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         git clone https://github.com/begyyal/act_access_ghra.git
-        issue_url_base=${{ github.event.repository.issue_url }}
+        issue_url_base=${{ github.event.repository.issues_url }}
         echo "::set-output name=issue-url::${issue_url_base%/*}/${{steps.ready.outputs.issue-no}}"
 
     - name: Close issue
