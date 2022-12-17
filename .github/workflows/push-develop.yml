@@ -8,13 +8,17 @@ jobs:
 
   dev-ci:
     runs-on: ubuntu-latest
-    
+    if: ${{ github.actor != '' }}
+
     steps:
 
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
+
+    - name: debug
+      run: echo ${{ github.actor }}
 
     - name: Prepare conditions
       id: ready
@@ -147,7 +151,10 @@ jobs:
       run: |
         git checkout develop
         git reset --hard ${{ github.event.before }}
-        
+        token64=$(printf "%s""x-access-token:${{ secrets.PAT_REPO }}" | base64)
+        git config --global http.https://github.com/.extraheader "AUTHORIZATION: basic $token64"
+        git push origin develop -f
+
     - name: Termination
       if: always()
       run: |
