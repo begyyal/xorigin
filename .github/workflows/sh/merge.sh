@@ -18,8 +18,8 @@ event_path=$3
 git_dir=$4
 token=$5
 repos=$6
-head_refs=".${gitdir}refs/heads/$target"
-mst_head_refs=".${gitdir}refs/heads/master"
+head_refs="${git_dir}refs/heads/$target"
+mst_head_refs="${git_dir}refs/heads/master"
 
 $shjp "$event_path" -t commits | 
 $shjp -t tree_id > ${tmp}target_trees
@@ -84,8 +84,8 @@ function main(){
 
 function checkDiff(){
   git fetch
-  diff -q ${tmp}head_refs_bk ${gitdir}refs/remotes/origin/$target 1>/dev/null && \
-  diff -q ${tmp}mst_head_refs_bk ${gitdir}refs/remotes/origin/master 1>/dev/null
+  diff -q ${tmp}head_refs_bk ${git_dir}refs/remotes/origin/$target 1>/dev/null && \
+  diff -q ${tmp}mst_head_refs_bk ${git_dir}refs/remotes/origin/master 1>/dev/null
 }
 
 cp $head_refs ${tmp}head_refs_bk
