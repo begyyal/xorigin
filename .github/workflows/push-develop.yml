@@ -90,9 +90,9 @@ jobs:
         method: 'PATCH'
         args: '{"state":"closed"}'
 
-    - name: Rollback
-      if: failure()
-      run: |
-        git checkout develop
-        git reset --hard ${{ github.event.before }}
-        git push origin develop -f
+    # - name: Rollback
+    #   if: failure()
+    #   run: |
+    #     git checkout develop
+    #     git reset --hard ${{ github.event.before }}
+    #     git push origin develop -f
