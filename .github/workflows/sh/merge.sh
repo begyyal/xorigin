@@ -30,6 +30,9 @@ repos=$6
 head_refs="${git_dir}refs/heads/$target"
 mst_head_refs="${git_dir}refs/heads/master"
 
+token64=$(printf "%s""x-access-token:${token}" | base64)
+git config http.https://github.com/.extraheader "AUTHORIZATION: basic $token64"
+
 $shjp "$event_path" -t commits | 
 $shjp -t tree_id > ${tmp}target_trees
 [ $? != 0 ] && end 1 || :  
@@ -113,18 +116,10 @@ while ! checkDiff ; do
 done
 [ $? != 0 ] && end 1 || :
 
-git push origin HEAD -f
+git push origin HEAD
 [ $? != 0 ] && end 1 || :
 
 git reset --hard $to
-curl \
-  -X POST \
-  -H "AUTHORIZATION: token ${token}" \
-  -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/${repos}/statuses/${to} \
-  -d '{"state":"success","context":"ci-passed-ph2"}'
-[ $? != 0 ] && end 1 || :
-
 git checkout master
 git merge $target
 [ $? != 0 ] && end 1 || :
