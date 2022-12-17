@@ -106,8 +106,12 @@ curl \
   -d '{"state":"success","context":"ci-passed-ph2"}'
 [ $? != 0 ] && end 1 || :
 
+git rebase master
+[ $? != 0 ] && end 1 || :
+git reset --hard $to
 git checkout -f master
-git cherry-pick $(git log $target $from..$to --pretty=oneline | cut -d " " -f 1 | tac)
+git merge $target
+[ $? != 0 ] && end 1 || :
 git push origin master
 [ $? != 0 ] && end 1 || :
 
