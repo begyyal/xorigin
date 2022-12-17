@@ -116,7 +116,7 @@ while ! checkDiff ; do
 done
 [ $? != 0 ] && end 1 || :
 
-git push origin HEAD
+git push origin HEAD -f
 [ $? != 0 ] && end 1 || :
 
 git reset --hard $to
