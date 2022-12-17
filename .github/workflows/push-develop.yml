@@ -20,9 +20,6 @@ jobs:
     - name: debug1
       run: echo ${{ github.actor }}
 
-    - name: debug2
-      run: git config --list
-
     - name: Prepare conditions
       id: ready
       run: |
@@ -54,7 +51,7 @@ jobs:
           develop \
           ${{ github.event_path }}
 
-    - name: Rebase to master
+    - name: Cherry-pick to master
       run: |
         head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
         git fetch
@@ -96,11 +93,11 @@ jobs:
         method: 'PATCH'
         args: '{"state":"closed"}'
 
-    # - name: Rollback
-    #   if: failure()
-    #   run: |
-    #     git checkout develop
-    #     git reset --hard ${{ github.event.before }}
-    #     token64=$(printf "%s""x-access-token:${{ secrets.PAT_REPO }}" | base64)
-    #     git config --global http.https://github.com/.extraheader "AUTHORIZATION: basic $token64"
-    #     git push origin develop -f
+    - name: Rollback
+      if: failure()
+      run: |
+        git checkout develop
+        git reset --hard ${{ github.event.before }}
+        token64=$(printf "%s""x-access-token:${{ secrets.PAT_REPO }}" | base64)
+        git config http.https://github.com/.extraheader "AUTHORIZATION: basic $token64"
+        git push origin develop -f
