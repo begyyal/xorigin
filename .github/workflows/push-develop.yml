@@ -8,7 +8,8 @@ jobs:
 
   dev-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != '' }}
+    # デフォルトトークンでブランチ保護をbypassできる仕様待ち。やめたい
+    if: ${{ github.actor == 'begyyal' }}
 
     steps:
 
@@ -56,7 +57,7 @@ jobs:
           develop \
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
-          ${{ github.token }} \
+          ${{ secrets.PAT_REPO }} \
           ${{ github.repository }} 
 
     - name: Merge
