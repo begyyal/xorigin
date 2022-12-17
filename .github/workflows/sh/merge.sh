@@ -19,6 +19,7 @@ git_dir=$4
 token=$5
 repos=$6
 head_refs=".${gitdir}refs/heads/$target"
+mst_head_refs=".${gitdir}refs/heads/master"
 
 $shjp "$event_path" -t commits | 
 $shjp -t tree_id > ${tmp}target_trees
@@ -31,6 +32,9 @@ if [ -z "$first_tree" ]; then
 fi
 
 function main(){
+
+  git rebase master
+  [ $? != 0 ] && end 1 || :
 
   target_nr=$(git log --pretty=format:%T | awk '{if($1=="'$first_tree'"){print NR}}')
   if [ -z "$target_nr" ]; then
@@ -80,16 +84,19 @@ function main(){
 
 function checkDiff(){
   git fetch
-  diff -q ${tmp}head_refs_bk ${gitdir}refs/remotes/origin/$target 1>/dev/null
+  diff -q ${tmp}head_refs_bk ${gitdir}refs/remotes/origin/$target 1>/dev/null && \
+  diff -q ${tmp}mst_head_refs_bk ${gitdir}refs/remotes/origin/master 1>/dev/null
 }
 
 cp $head_refs ${tmp}head_refs_bk
+cp $mst_head_refs ${tmp}mst_head_refs_bk
 main
 while ! checkDiff ; do
   git checkout master
   git branch -D $target
   git checkout $target
   cp $head_refs ${tmp}head_refs_bk
+  cp $mst_head_refs ${tmp}mst_head_refs_bk
   main
 done
 [ $? != 0 ] && end 1 || :
@@ -97,19 +104,16 @@ done
 git push HEAD -f
 [ $? != 0 ] && end 1 || :
 
-head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
+git reset --hard $to
 curl \
   -X POST \
   -H "AUTHORIZATION: token ${token}" \
   -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/${repos}/statuses/${head} \
+  https://api.github.com/repos/${repos}/statuses/${to} \
   -d '{"state":"success","context":"ci-passed-ph2"}'
 [ $? != 0 ] && end 1 || :
 
-git rebase master
-[ $? != 0 ] && end 1 || :
-git reset --hard $to
-git checkout -f master
+git checkout master
 git merge $target
 [ $? != 0 ] && end 1 || :
 git push origin master
