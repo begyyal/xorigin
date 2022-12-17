@@ -21,9 +21,6 @@ jobs:
       run: echo ${{ github.actor }}
 
     - name: debug2
-      run: git config --global --list
-
-    - name: debug3
       run: git config --list
 
     - name: Prepare conditions
