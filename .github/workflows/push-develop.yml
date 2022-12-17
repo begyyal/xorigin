@@ -12,16 +12,18 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v3
+    - name: Await sequentially
+      uses: begyyal/act_await_workflow_runs@v1
       with:
-        fetch-depth: 0
-        submodules: true
+        workflowName: CI
 
     - name: debug1
       run: echo ${{ github.actor }}
 
-    - name: debug2
-      run: git config --list
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
 
     - name: Prepare conditions
       id: ready
@@ -30,6 +32,16 @@ jobs:
         git config --global user.name "begyyal-ghost"
         fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
         echo "::set-output name=issue-no::${fb#feature/}"
+
+    - name: Create dev-tmp
+      id: temp
+      if: ${{ steps.ready.outputs.issue-no != '' }}
+      run: |
+        tmpb=dev-tmp/${{ steps.ready.outputs.issue-no }}
+        git push origin $tmpb -d --quiet || :
+        git checkout -b $tmpb
+        git push origin $tmpb
+        echo "::set-output name=branch::$tmpb"
   
     - name: Set up JDK 15
       uses: actions/setup-java@v2
@@ -51,16 +63,9 @@ jobs:
       run: |
         ./.github/workflows/sh/revise_comments.sh \
           "#${{ steps.ready.outputs.issue-no }}" \
-          develop \
+          ${{ steps.temp.outputs.branch }} \
           ${{ github.event_path }}
-
-    - name: Rebase to master
-      run: |
-        head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
-        git fetch
-        git checkout -f master
-        git cherry-pick $(git log develop ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
-
+        
     - name: Mark success to status checks
       run: |
         head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
@@ -71,10 +76,12 @@ jobs:
           https://api.github.com/repos/${{ github.repository }}/statuses/${head} \
           -d '{"state":"success","context":"ci-passed-ph2"}'
 
-    - name: Await sequentially
-      uses: begyyal/act_await_workflow_runs@v1
-      with:
-        workflowName: CI
+    - name: Cherry-pick to master
+      run: |
+        head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
+        git fetch
+        git checkout -f master
+        git cherry-pick $(git log ${{ steps.temp.outputs.branch }} ${{ github.event.before }}..$head --pretty=oneline | cut -d " " -f 1 | tac)
 
     - name: Push master
       run: |
@@ -96,11 +103,15 @@ jobs:
         method: 'PATCH'
         args: '{"state":"closed"}'
 
-    # - name: Rollback
-    #   if: failure()
-    #   run: |
-    #     git checkout develop
-    #     git reset --hard ${{ github.event.before }}
-    #     token64=$(printf "%s""x-access-token:${{ secrets.PAT_REPO }}" | base64)
-    #     git config --global http.https://github.com/.extraheader "AUTHORIZATION: basic $token64"
-    #     git push origin develop -f
+    - name: Rollback
+      if: failure()
+      run: |
+        git checkout develop
+        git reset --hard ${{ github.event.before }}
+        git push origin develop -f
+
+    - name: Termination
+      if: always()
+      run: |
+        tmpb=${{ steps.temp.outputs.branch }}
+        [ -n "$tmpb" ] && git push origin $tmpb -d || :
