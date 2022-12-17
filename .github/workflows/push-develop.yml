@@ -17,8 +17,14 @@ jobs:
         fetch-depth: 0
         submodules: true
 
-    - name: debug
+    - name: debug1
       run: echo ${{ github.actor }}
+
+    - name: debug2
+      run: git config --global --list
+
+    - name: debug3
+      run: git config --list
 
     - name: Prepare conditions
       id: ready
