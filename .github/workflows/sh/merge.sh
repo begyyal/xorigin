@@ -7,17 +7,8 @@ tmp=${tmp_dir}'/'$$'_'
 cmd_dir=`dirname $0`
 shjp=${cmd_dir}/shjp
 
-function printStacktrace() {
-  index=1
-  while frame=($(caller "${index}")); do
-      ((index++))
-      echo "at function ${frame[1]} (${frame[2]}:${frame[0]})" >&2
-  done
-}
-
 function end(){
   rm -f ${tmp}*
-  printStacktrace
   exit $1
 }
 
