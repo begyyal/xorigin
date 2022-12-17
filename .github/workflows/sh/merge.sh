@@ -88,6 +88,9 @@ function checkDiff(){
   diff -q ${tmp}mst_head_refs_bk ${git_dir}refs/remotes/origin/master 1>/dev/null
 }
 
+git checkout master # set upstream
+git checkout $target
+
 cp $head_refs ${tmp}head_refs_bk
 cp $mst_head_refs ${tmp}mst_head_refs_bk
 main
