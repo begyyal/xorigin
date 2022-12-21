@@ -29,9 +29,7 @@ function main(){
   remains="$(git log --pretty="%T %H" | 
   awk '{if($2=="'$before'"){flag=1};if(flag!=1){print $0};}' |
   tac |
-  while read tchash; do
-    tree=$(echo "$tchash" | cut -d " " -f 1)
-    commit=$(echo "$tchash" | cut -d " " -f 2)
+  while read tree commit; do
     [ -z "$(cat ${tmp}target_trees | grep -o $tree)" ] && printf "${commit} " || :
   done )"
   [ $? != 0 ] && end 1 || :
