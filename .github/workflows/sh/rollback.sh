@@ -15,6 +15,7 @@ function end(){
 event_path=$1
 git_dir=$2
 repos=$3
+target=$4
 head_refs="${git_dir}refs/heads/$target"
 
 $shjp "$event_path" -t commits | 
