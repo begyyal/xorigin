@@ -74,10 +74,15 @@ function checkDiff(){
 git checkout dev # set upstream
 git checkout stg
 
+i=0
 cp $head_refs ${tmp}head_refs_bk
 cp $dev_head_refs ${tmp}dev_head_refs_bk
 main
 while ! checkDiff ; do
+  if [ $((++i)) -gt 100 ]; then
+    echo "The process repeated more than 100 times, maybe a bug of loop happened..." >&2
+    end 1
+  fi
   git checkout dev
   git branch -D stg
   git checkout stg
