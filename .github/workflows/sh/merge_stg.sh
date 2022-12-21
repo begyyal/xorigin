@@ -23,24 +23,23 @@ $shjp "$event_path" -t commits |
 $shjp -t tree_id > ${tmp}target_trees
 [ $? != 0 ] && end 1 || :  
 
+before=$($shjp "$event_path" -t before)
 last_tree=$(cat ${tmp}target_trees | tail -n 1)
 
 function main(){
 
+  parent=$before
   to=''; started='';
   git rebase dev
   [ $? != 0 ] && end 1 || :
 
   git log --pretty="%T %H" | 
-  awk '{if($1=="'$before'"){flag=1};if(flag!=1){print $0};}' |
+  awk '{if($2=="'$before'"){flag=1};if(flag!=1){print $0};}' |
   tac |
-  while read tchash; do
+  while read tree commit; do
 
-    tree=$(echo "$tchash" | cut -d " " -f 1)
-    commit=$(echo "$tchash" | cut -d " " -f 2)
     props=$(git cat-file -p $commit | awk '{if($0==""){flag=1}else if(flag!=1){print $0}}')
     author=$(echo "$props" | grep ^author | cut -d " " -f 2-)
-
     git cat-file -p $commit | awk '{if(flag==1){print $0}else if($0==""){flag=1}}' > ${tmp}comments
     if [ -z $started ]; then
       started=$(cat ${tmp}comments | awk '{if(NR==1 && $0 !~ /^('$prefix').*$/){print "1"}}')
