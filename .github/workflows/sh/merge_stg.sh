@@ -28,7 +28,7 @@ last_tree=$(cat ${tmp}target_trees | tail -n 1)
 function main(){
 
   to=''; started='';
-  git rebase develop
+  git rebase dev
   [ $? != 0 ] && end 1 || :
 
   git log --pretty="%T %H" | 
