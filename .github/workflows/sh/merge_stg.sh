@@ -98,4 +98,10 @@ git merge stg
 git push origin dev
 [ $? != 0 ] && end 1 || :
 
+git checkout mst
+git merge dev
+[ $? != 0 ] && end 1 || :
+git push origin mst
+[ $? != 0 ] && end 1 || :
+
 end 0

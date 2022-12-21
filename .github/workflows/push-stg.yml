@@ -1,4 +1,4 @@
-name: CI
+name: push-stg
 
 on:
   push:
@@ -25,60 +25,42 @@ jobs:
         fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
         echo "::set-output name=issue-no::${fb#feature/}"
   
-    # - name: Set up JDK 15
-    #   uses: actions/setup-java@v2
-    #   with:
-    #     java-version: '15'
-    #     distribution: 'adopt'
+    - name: Set up JDK 15
+      uses: actions/setup-java@v2
+      with:
+        java-version: '15'
+        distribution: 'adopt'
 
-    # - name: Build with Gradle
-    #   run: |
-    #     chmod +x ./cmd/gradlew
-    #     ./cmd/gradlew build -b ./lib/build.gradle
-    #     ./cmd/gradlew build -b ./cmd/build.gradle
+    - name: Build with Gradle
+      run: |
+        chmod +x ./cmd/gradlew
+        ./cmd/gradlew build -b ./lib/build.gradle
+        ./cmd/gradlew build -b ./cmd/build.gradle
 
-    # - name: Test
-    #   run: ./test.sh
+    - name: Test
+      run: ./test.sh
 
     - name: Await sequentially
       uses: begyyal/act_await_workflow_runs@v1
       with:
-        workflowName: CI
+        workflowName: push-stg
 
     - name: Revise and merge
-      if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
-        ./.github/workflows/sh/merge.sh \
+        ./.github/workflows/sh/merge_stg.sh \
           "#${{ steps.ready.outputs.issue-no }}" \
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
           ${{ github.repository }} 
 
-    - name: Merge
-      if: ${{ steps.ready.outputs.issue-no == '' }}
-      run: |
-        head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
-        curl \
-          -X POST \
-          -H "AUTHORIZATION: token ${{ github.token }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/statuses/${head} \
-          -d '{"state":"success","context":"ci-passed-ph2"}'
-        git fetch
-        git checkout master
-        git merge develop
-        git push origin master
-
     - name: Prepare to close issue
       id: ready-closing
-      if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
         git clone https://github.com/begyyal/act_access_ghra.git
         issue_url_base=${{ github.event.repository.issues_url }}
         echo "::set-output name=issue-url::${issue_url_base%\{*}/${{steps.ready.outputs.issue-no}}"
 
     - name: Close issue
-      if: ${{ steps.ready.outputs.issue-no != '' }}
       uses: ./act_access_ghra
       with:
         url: ${{ steps.ready-closing.outputs.issue-url }}
@@ -91,4 +73,5 @@ jobs:
         ./.github/workflows/sh/rollback.sh \
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
-          ${{ github.repository }} 
+          ${{ github.repository }} \
+          stg
