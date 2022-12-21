@@ -37,7 +37,6 @@ function main(){
   [ $? != 0 ] && end 1 || :
 
   git reset --hard $before
-  git cherry-pick $remains
   if [ -n "$remains" ] && git cherry-pick "$remains"; then
     echo "Cherry-pick failed, it seems succeeding commits depend on this rollback target." >&2
     end 1
