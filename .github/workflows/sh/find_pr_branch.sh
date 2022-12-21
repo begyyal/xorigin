@@ -20,12 +20,8 @@ git fetch
 git branch -a | 
 grep -E '^\s*remotes/origin/'${prefix}'/[1-9][0-9]*$' |
 while read b; do
-    bc=$(git log $b --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
-    echo $b >&2
-    echo $bc >&2    
-    git cat-file -p $bc | 
-    grep "^tree ${head_tree}" -oq && echo ${b#remotes/origin/} || : >> ${tmp}hits
-done
+    [ "$(git log $b --pretty=%T | head -n 1)" == ${head_tree} ] && echo ${b#remotes/origin/} || :
+done >> ${tmp}hits
 
 count=$(cat ${tmp}hits | wc -l)
 if [ $count = 0 ]; then
