@@ -60,7 +60,7 @@ function main(){
     git reset --hard HEAD
     git commit --amend --author="$author" -C HEAD --allow-empty
     parent=$(cat $head_refs)
-    [ -n $target_flag ] && to=$parent || :[ $? != 0 ] && end 1 || :
+    [ -n $target_flag ] && to=$parent || :
   done
 }
 [ $? != 0 ] && end 1 || :
