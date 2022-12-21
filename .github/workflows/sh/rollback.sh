@@ -27,7 +27,7 @@ before=$($shjp "$event_path" -t before)
 function main(){
 
   remains="$(git log --pretty="%T %H" | 
-  awk '{if($1=="'$before'"){flag=1};if(flag!=1){print $0};}' |
+  awk '{if($2=="'$before'"){flag=1};if(flag!=1){print $0};}' |
   tac |
   while read tchash; do
     tree=$(echo "$tchash" | cut -d " " -f 1)
@@ -38,7 +38,7 @@ function main(){
 
   git reset --hard $before
   git cherry-pick $remains
-  if [ $? != 0 ]; then
+  if [ -n "$remains" ] && git cherry-pick "$remains"; then
     echo "Cherry-pick failed, it seems succeeding commits depend on this rollback target." >&2
     end 1
   fi
