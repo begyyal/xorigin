@@ -46,10 +46,15 @@ function checkDiff(){
   diff -q ${tmp}head_refs_bk ${git_dir}refs/remotes/origin/$target 1>/dev/null
 }
 
+i=0
 git checkout $target
 cp $head_refs ${tmp}head_refs_bk
 main
 while ! checkDiff ; do
+  if [ $((++i)) -gt 100 ]; then
+    echo "The process repeated more than 100 times, maybe a bug of loop happened..." >&2
+    end 1
+  fi
   git checkout mst
   git branch -D $target
   git checkout $target
