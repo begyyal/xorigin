@@ -11,54 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Checkout head
+    - name: Checkout
       uses: actions/checkout@v2
       with:
-        fetch-depth: 0
         submodules: true
-        ref: ${{ github.head_ref }}
-
-    - name: Checkout base
-      if: ${{ startsWith(github.head_ref, 'feature/') }}
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        submodules: true
-        ref: ${{ github.base_ref }}
-        path: ./temp
-
-    - name: Create snapshot-from
-      if: ${{ startsWith(github.head_ref, 'feature/') }}
-      shell: bash
-      run: |
-        cd ./temp
-        branch=${{ github.head_ref }}
-        snapshot=ss-from${branch#feature}
-        [ -n "$(git branch -r | sed 's/ //g' | grep -e ^origin/$snapshot)" ] && git push origin $snapshot --delete
-        git checkout -b $snapshot
-        git push origin $snapshot
-        cd ../ && rm -rdf ./temp
-
-    - name: Create snapshot-to
-      if: ${{ startsWith(github.head_ref, 'feature/') }}
-      shell: bash
-      run: |
-        branch=${{ github.head_ref }}
-        snapshot=ss-to${branch#feature}
-        [ -n "$(git branch -r | sed 's/ //g' | grep -e ^origin/$snapshot)" ] && git push origin $snapshot --delete
-        git checkout -b $snapshot
-        git push origin $snapshot
-
-    - name: Prepare conditions
-      id: cond
-      shell: bash
-      run: |
-        do_test="$(./.github/workflows/sh/do_test.sh ${{ github.base_ref }} ${{ github.head_ref }})"
-        echo "::set-output name=do-test::${do_test}"
-
-    - name: Update submodules
-      if: ${{ steps.cond.outputs.do-test }}
-      run: git submodule update --remote
 
     - name: Set up JDK 15
       if: ${{ steps.cond.outputs.do-test }}
@@ -80,3 +36,13 @@ jobs:
     - name: Test
       if: ${{ steps.cond.outputs.do-test }}
       run: ./test.sh
+
+    - name: Mark success of status checks
+      run: |
+        head=$(git log --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
+        curl \
+          -X POST \
+          -H "AUTHORIZATION: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/statuses/${head} \
+          -d '{"state":"success","context":"ci-passed"}'

@@ -20,11 +20,11 @@ while read b; do
     bc=$(git log $b --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
     git cat-file -p $bc | 
     grep ^tree |
-    grep "tree ${head_tree}" -o && echo ${b#remotes/origin/} >> ${tmp}hits
+    grep "tree ${head_tree}" -o && echo ${b#remotes/origin/} || : >> ${tmp}hits
 done
 
 count=$(cat ${tmp}hits | wc -l)
-if [ $count != 0 ]; then
+if [ $count = 0 ]; then
     end 0
 elif [ $count -gt 1 ]; then
     echo 'Some branches prefixed are found, it must be one.' >&2
