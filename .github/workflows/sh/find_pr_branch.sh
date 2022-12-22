@@ -23,9 +23,10 @@ git branch -a |
 grep -E '^remotes/origin/'${prefix}'/[1-9][0-9]*$' |
 while read b; do
     bc=$(git log $b --pretty=oneline | head -n 1 | cut -d ' ' -f 1)
+    echo $b >&2
+    echo $bc >&2    
     git cat-file -p $bc | 
-    grep ^tree |
-    grep "tree ${head_tree}" -oq && echo ${b#remotes/origin/} || : >> ${tmp}hits
+    grep "^tree ${head_tree}" -oq && echo ${b#remotes/origin/} || : >> ${tmp}hits
 done
 
 count=$(cat ${tmp}hits | wc -l)
