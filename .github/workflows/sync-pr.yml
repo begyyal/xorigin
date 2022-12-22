@@ -14,37 +14,42 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       with:
+        fetch-depth: 0
         submodules: true
 
     - name: Prepare conditions
-      id: cond
-      shell: bash
+      id: cond1
+      if: ${{ github.event.action == 'opened' }}
       run: |
-        do_test=$(./.github/workflows/sh/check_if_need_test.sh)
-        echo "::set-output name=do-test::${do_test}"
+        do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.base_ref }} ${{ github.head_ref }})
+        echo "::set-output name=do-test::${do_test:-false}"
 
-    - name: debug
-      run: echo ${{ toJSON(github) }}
+    - name: Prepare conditions
+      id: cond2
+      if: ${{ github.event.action == 'synchronize' }}
+      run: |
+        do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.event.before }} ${{ github.event.after }})
+        echo "::set-output name=do-test::${do_test:-false}"
 
     - name: Set up JDK 15
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       uses: actions/setup-java@v2
       with:
         java-version: '15'
         distribution: 'adopt'
 
     - name: Grant execute permission for gradlew
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       run: chmod +x ./cmd/gradlew
 
     - name: Build with Gradle
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       run: |
         ./cmd/gradlew build -b ./lib/build.gradle -x test
         ./cmd/gradlew build -b ./cmd/build.gradle -x test
 
     - name: Test
-      if: ${{ steps.cond.outputs.do-test }}
+      if: ${{ steps.cond1.outputs.do-test || steps.cond2.outputs.do-test }}
       run: ./test.sh
 
     - name: Mark success of status checks
