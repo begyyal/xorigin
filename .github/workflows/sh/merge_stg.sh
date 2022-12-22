@@ -20,16 +20,13 @@ head_refs="${git_dir}refs/heads/stg"
 dev_head_refs="${git_dir}refs/heads/dev"
 
 $shjp "$event_path" -t commits | 
-$shjp -t tree_id,id |
-awk '{if(NR%2==1){rec=$0}else{print rec" "$0}}' > ${tmp}target_tc
+$shjp -t id,tree_id |
+awk '{if(NR%2==1){rec=$0}else{print rec" "$0}}' > ${tmp}target_ct
 [ $? != 0 ] && end 1 || :  
 
 before_commit=$($shjp "$event_path" -t before)
 before_tree=$(git log --pretty=%T "$before_commit" | head -n 1)
-last_tree=$(cat ${tmp}target_tc | cut -d " " -f 1 | tail -n 1)
-
-echo !!!!!!!!!!!!!!!!!!!!!!!!!!!! >&2
-echo $last_tree >&2
+last_tree=$(cat ${tmp}target_ct | cut -d " " -f 2 | tail -n 1)
 
 function main(){
 
@@ -52,7 +49,7 @@ function main(){
       [ -z $started ] && continue || :
     fi
 
-    target_flag=$(cat ${tmp}target_tc | cut -d " " -f 1 | grep ^$tree)
+    target_flag=$(cat ${tmp}target_ct | cut -d " " -f 2 | grep ^$tree)
     if [ -n $target_flag ]; then
       cat ${tmp}comments > ${tmp}comments_cp
       cat ${tmp}comments_cp | 
@@ -109,8 +106,8 @@ git push origin dev
 
 git log origin/mst --pretty=%T > ${tmp}mst_trees
 mst_dup_flag=''
-remains="$(cat ${tmp}target_tc |
-while read tree commit; do
+remains="$(cat ${tmp}target_ct |
+while read commit tree; do
   if cat ${tmp}mst_trees | grep ^$tree 1>/dev/null ; then
     mst_dup_flag=1
     echo $commit" is skipped for merging to mst because the tree is duplicated." >&2
