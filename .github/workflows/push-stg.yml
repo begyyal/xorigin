@@ -10,10 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-    - name: debug
-      run: echo ${{ toJSON(github) }}
-
+    
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
