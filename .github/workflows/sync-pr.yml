@@ -44,9 +44,9 @@ jobs:
     - name: Prepare conditions
       id: cond
       shell: bash
-      run: | 
-        echo ${{ toJSON(github) }}
-        echo "::set-output name=do-test::false"
+      run: |
+        do_test="$(./.github/workflows/sh/do_test.sh ${{ github.base_ref }} ${{ github.head_ref }})"
+        echo "::set-output name=do-test::${do_test}"
 
     - name: Update submodules
       if: ${{ steps.cond.outputs.do-test }}
