@@ -53,6 +53,7 @@ jobs:
     - name: Clone repo
       run: |
         git clone https://github.com/begyyal/act_revise_comments.git
+        cd ./act_revise_comments
         git fetch
         git checkout debug
 
