@@ -51,12 +51,12 @@ jobs:
     - name: Revise and merge
       if: ${{ steps.ready.outputs.issue-no != '' }}
       run: |
-        ./.github/workflows/sh/revise_comments.sh \
+        ./.github/workflows/sh/merge.sh \
           "#${{ steps.ready.outputs.issue-no }}" \
           develop \
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
-          ${{ github.token }}" \
+          ${{ github.token }} \
           ${{ github.repository }} 
 
     - name: Merge
