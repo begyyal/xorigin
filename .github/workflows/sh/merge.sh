@@ -17,19 +17,17 @@ event_path=$2
 git_dir=$3
 repos=$4
 head_refs="${git_dir}refs/heads/stg"
-dev_head_refs="${git_dir}refs/heads/develop"
+dev_head_refs="${git_dir}refs/heads/dev"
 
 $shjp "$event_path" -t commits | 
 $shjp -t tree_id > ${tmp}target_trees
 [ $? != 0 ] && end 1 || :  
 
 last_tree=$(cat ${tmp}target_trees | tail -n 1)
-from=$parent
-to=''
-started=''
 
 function main(){
 
+  to=''; started='';
   git rebase develop
   [ $? != 0 ] && end 1 || :
 
@@ -70,22 +68,22 @@ function main(){
 
 function checkDiff(){
   git fetch
-  diff -q ${tmp}head_refs_bk ${git_dir}refs/remotes/origin/$target 1>/dev/null && \
-  diff -q ${tmp}mst_head_refs_bk ${git_dir}refs/remotes/origin/master 1>/dev/null
+  diff -q ${tmp}head_refs_bk ${git_dir}refs/remotes/origin/stg 1>/dev/null && \
+  diff -q ${tmp}dev_head_refs_bk ${git_dir}refs/remotes/origin/dev 1>/dev/null
 }
 
-git checkout master # set upstream
-git checkout $target
+git checkout dev # set upstream
+git checkout stg
 
 cp $head_refs ${tmp}head_refs_bk
-cp $mst_head_refs ${tmp}mst_head_refs_bk
+cp $dev_head_refs ${tmp}dev_head_refs_bk
 main
 while ! checkDiff ; do
-  git checkout master
-  git branch -D $target
-  git checkout $target
+  git checkout dev
+  git branch -D stg
+  git checkout stg
   cp $head_refs ${tmp}head_refs_bk
-  cp $mst_head_refs ${tmp}mst_head_refs_bk
+  cp $dev_head_refs ${tmp}dev_head_refs_bk
   main
 done
 [ $? != 0 ] && end 1 || :
@@ -94,10 +92,10 @@ git push origin HEAD -f
 [ $? != 0 ] && end 1 || :
 
 git reset --hard $to
-git checkout master
-git merge develop
+git checkout dev
+git merge stg
 [ $? != 0 ] && end 1 || :
-git push origin master
+git push origin dev
 [ $? != 0 ] && end 1 || :
 
 end 0
