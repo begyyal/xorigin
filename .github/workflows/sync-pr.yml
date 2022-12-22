@@ -1,0 +1,74 @@
+name: Update process of PR
+
+on:
+  pull_request:
+    branches: [ develop ]
+    types: [ opened, synchronize ]
+
+jobs:
+
+  pr-update-process:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+
+    - name: Create snapshot-from
+      if: ${{ startsWith(github.head_ref, 'feature/') }}
+      shell: bash
+      run: |
+        branch=${{ github.head_ref }}
+        snapshot=ss-from${branch#feature}
+        [ -n "$(git branch -r | sed 's/ //g' | grep -e ^origin/$snapshot)" ] && git push origin $snapshot --delete
+        git checkout ${{ github.base_ref }}
+        git checkout -b $snapshot
+        git push origin $snapshot
+        git log --oneline
+
+    - name: Create snapshot-to
+      if: ${{ startsWith(github.head_ref, 'feature/') }}
+      shell: bash
+      run: |
+        branch=${{ github.head_ref }}
+        snapshot=ss-to${branch#feature}
+        [ -n "$(git branch -r | sed 's/ //g' | grep -e ^origin/$snapshot)" ] && git push origin $snapshot --delete
+        git checkout ${{ github.head_ref }}
+        git checkout -b $snapshot
+        git push origin $snapshot
+        git log --oneline
+
+    - name: Prepare conditions
+      id: cond
+      shell: bash
+      run: | 
+        echo ${{ toJSON(github) }}
+        echo "::set-output name=do-test::false"
+
+    - name: Update submodules
+      if: ${{ steps.cond.outputs.do-test }}
+      run: git submodule update --remote
+
+    - name: Set up JDK 15
+      if: ${{ steps.cond.outputs.do-test }}
+      uses: actions/setup-java@v2
+      with:
+        java-version: '15'
+        distribution: 'adopt'
+
+    - name: Grant execute permission for gradlew
+      if: ${{ steps.cond.outputs.do-test }}
+      run: chmod +x ./cmd/gradlew
+
+    - name: Build with Gradle
+      if: ${{ steps.cond.outputs.do-test }}
+      run: |
+        ./cmd/gradlew build -b ./lib/build.gradle -x test
+        ./cmd/gradlew build -b ./cmd/build.gradle -x test
+
+    - name: Test
+      if: ${{ steps.cond.outputs.do-test }}
+      run: ./test.sh
