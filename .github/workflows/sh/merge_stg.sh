@@ -28,6 +28,9 @@ before_commit=$($shjp "$event_path" -t before)
 before_tree=$(git log --pretty=%T "$before_commit" | head -n 1)
 last_tree=$(cat ${tmp}target_tc | cut -d " " -f 1 | tail -n 1)
 
+echo !!!!!!!!!!!!!!!!!!!!!!!!!!!! >&2
+echo $last_tree >&2
+
 function main(){
 
   to=''; started='';
