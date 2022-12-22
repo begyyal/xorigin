@@ -94,6 +94,3 @@ jobs:
       run: |
         git push origin 'ss-from/'${{ steps.ready.outputs.issue-no }} --delete
         git push origin 'ss-to/'${{ steps.ready.outputs.issue-no }} --delete
-  
-    - name: debug
-      run: echo ${{ toJSON(github) }}
