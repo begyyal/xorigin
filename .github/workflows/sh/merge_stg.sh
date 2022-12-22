@@ -24,19 +24,21 @@ $shjp -t tree_id,id |
 awk '{if(NR%2==1){rec=$0}else{print rec" "$0}}' > ${tmp}target_tc
 [ $? != 0 ] && end 1 || :  
 
-before=$($shjp "$event_path" -t before)
+before_commit=$($shjp "$event_path" -t before)
+before_tree=$(git log --pretty=%T "$before_commit" | head -n 1)
 last_tree=$(cat ${tmp}target_tc | cut -d " " -f 1 | tail -n 1)
 
 function main(){
 
-  parent=$before
   to=''; started='';
   git rebase dev
   [ $? != 0 ] && end 1 || :
 
-  git log --pretty="%T %H" | 
-  awk '{if($2=="'$before'"){flag=1};if(flag!=1){print $0};}' |
-  tac |
+  parent="$(git log --pretty="%T %H" | 
+  awk '{if(flag!=1){print $0};if($1=="'$before_tree'"){flag=1};}' |
+  tac | tee ${tmp}diff | head -n 1 | cut -d " " -f 2)"
+
+  cat ${tmp}diff | sed 1d |
   while read tree commit; do
 
     props=$(git cat-file -p $commit | awk '{if($0==""){flag=1}else if(flag!=1){print $0}}')
@@ -84,9 +86,8 @@ while ! checkDiff ; do
     echo "The process repeated more than 100 times, maybe a bug of loop happened..." >&2
     end 1
   fi
-  git checkout dev
-  git branch -D stg
-  git checkout stg
+  git branch -D dev && git checkout dev || :
+  git branch -D stg && git checkout stg || :
   cp $head_refs ${tmp}head_refs_bk
   cp $dev_head_refs ${tmp}dev_head_refs_bk
   main
