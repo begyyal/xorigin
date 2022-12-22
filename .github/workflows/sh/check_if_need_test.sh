@@ -22,7 +22,7 @@ cat > ${tmp}ig_pattern << EOF
 EOF
 
 cat ${tmp}ig_pattern |
-while read ig; do
+while read -r ig; do
   cat ${tmp}diff |
   awk "\$0 ~ /$ig/ {print \$0}" 
 done | sort | uniq > ${tmp}ignored
