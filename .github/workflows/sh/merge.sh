@@ -13,59 +13,37 @@ function end(){
 }
 
 prefix="$1"
-target=$2
-event_path=$3
-git_dir=$4
-token=$5
-repos=$6
-head_refs="${git_dir}refs/heads/$target"
-mst_head_refs="${git_dir}refs/heads/master"
-
-token64=$(printf "%s""x-access-token:${token}" | base64)
-git config http.https://github.com/.extraheader "AUTHORIZATION: basic $token64"
+event_path=$2
+git_dir=$3
+repos=$4
+head_refs="${git_dir}refs/heads/stg"
+dev_head_refs="${git_dir}refs/heads/develop"
 
 $shjp "$event_path" -t commits | 
 $shjp -t tree_id > ${tmp}target_trees
 [ $? != 0 ] && end 1 || :  
 
-first_tree=$(cat ${tmp}target_trees | head -n 1)
 last_tree=$(cat ${tmp}target_trees | tail -n 1)
-if [ -z "$first_tree" ]; then
-  echo 'The target commits of the processing dont exist.' >&2
-  end 1
-fi
+from=$parent
+to=''
+started=''
 
 function main(){
 
-  git rebase master
+  git rebase develop
   [ $? != 0 ] && end 1 || :
 
-  target_nr=$(git log --pretty=format:%T | awk '{if($1=="'$first_tree'"){print NR}}')
-  if [ -z "$target_nr" ]; then
-    echo 'The target commits of the processing dont exist in the target branch.' >&2
-    echo 'Maybe the target branch is rollbacked because preceeded CI failed.' >&2
-    end 1
-  fi
-
-  parent=$(git log --pretty=oneline |
-  cut -d " " -f 1 |
-  head -n $(($target_nr+1)) | 
+  git log --pretty="%T %H" | 
+  awk '{if($1=="'$before'"){flag=1};if(flag!=1){print $0};}' |
   tac |
-  tee ${tmp}targets_of_revision |
-  head -n 1)
+  while read tchash; do
 
-  from=$parent
-  to=''
-  started=''
-  cat ${tmp}targets_of_revision |
-  sed '1d' |
-  while read commit_hash; do
-
-    props=$(git cat-file -p $commit_hash | awk '{if($0==""){flag=1}else if(flag!=1){print $0}}')
-    tree=$(echo "$props" | grep ^tree | cut -d " " -f 2)
+    tree=$(echo "$tchash" | cut -d " " -f 1)
+    commit=$(echo "$tchash" | cut -d " " -f 2)
+    props=$(git cat-file -p $commit | awk '{if($0==""){flag=1}else if(flag!=1){print $0}}')
     author=$(echo "$props" | grep ^author | cut -d " " -f 2-)
 
-    git cat-file -p $commit_hash | awk '{if(flag==1){print $0}else if($0==""){flag=1}}' > ${tmp}comments
+    git cat-file -p $commit | awk '{if(flag==1){print $0}else if($0==""){flag=1}}' > ${tmp}comments
     if [ -z $started ]; then
       started=$(cat ${tmp}comments | awk '{if(NR==1 && $0 !~ /^('$prefix').*$/){print "1"}}')
       [ -z $started ] && continue || :
@@ -85,10 +63,10 @@ function main(){
     git reset --hard HEAD
     git commit --amend --author="$author" -C HEAD --allow-empty
     parent=$(cat $head_refs)
-    [ -n $target_flag ] && to=$parent || :
+    [ -n $target_flag ] && to=$parent || :[ $? != 0 ] && end 1 || :
   done
-  [ $? != 0 ] && end 1 || :
 }
+[ $? != 0 ] && end 1 || :
 
 function checkDiff(){
   git fetch
@@ -117,7 +95,7 @@ git push origin HEAD -f
 
 git reset --hard $to
 git checkout master
-git merge $target
+git merge develop
 [ $? != 0 ] && end 1 || :
 git push origin master
 [ $? != 0 ] && end 1 || :
