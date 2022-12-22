@@ -20,11 +20,12 @@ head_refs="${git_dir}refs/heads/stg"
 dev_head_refs="${git_dir}refs/heads/dev"
 
 $shjp "$event_path" -t commits | 
-$shjp -t tree_id > ${tmp}target_trees
+$shjp -t tree_id,id |
+awk '{if(NR%2==1){rec=$0}else{print rec" "$0}}' > ${tmp}target_tc
 [ $? != 0 ] && end 1 || :  
 
 before=$($shjp "$event_path" -t before)
-last_tree=$(cat ${tmp}target_trees | tail -n 1)
+last_tree=$(cat ${tmp}target_tc | cut -d " " -f 1 | tail -n 1)
 
 function main(){
 
@@ -46,7 +47,7 @@ function main(){
       [ -z $started ] && continue || :
     fi
 
-    target_flag=$(cat ${tmp}target_trees | grep ^$tree)
+    target_flag=$(cat ${tmp}target_tc | cut -d " " -f 1 | grep ^$tree)
     if [ -n $target_flag ]; then
       cat ${tmp}comments > ${tmp}comments_cp
       cat ${tmp}comments_cp | 
@@ -102,10 +103,29 @@ git merge stg
 git push origin dev
 [ $? != 0 ] && end 1 || :
 
-git checkout mst
-git merge dev
+git log origin/mst --pretty=%T > ${tmp}mst_trees
+mst_dup_flag=''
+remains="$(cat ${tmp}target_tc |
+while read tree commit; do
+  if cat ${tmp}mst_trees | grep ^$tree 1>/dev/null ; then
+    mst_dup_flag=1
+    echo $commit" is skipped for merging to mst because the tree is duplicated." >&2
+  else
+    printf "${commit} "
+  fi
+done )"
 [ $? != 0 ] && end 1 || :
-git push origin mst
-[ $? != 0 ] && end 1 || :
+
+if [ -n "$remains" ]; then
+  git checkout mst
+  if [ -z "$mst_dup_flag" ]; then
+    git merge dev
+  else
+    git cherry-pick "${remains}" 
+  fi
+  [ $? != 0 ] && end 1 || :
+  git push origin mst
+  [ $? != 0 ] && end 1 || :
+fi
 
 end 0
