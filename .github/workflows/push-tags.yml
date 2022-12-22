@@ -1,4 +1,4 @@
-name: push-tags
+name: Update tag
 
 on:
   push:
