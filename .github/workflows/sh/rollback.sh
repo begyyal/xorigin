@@ -15,7 +15,7 @@ function end(){
 event_path=$1
 git_dir=$2
 repos=$3
-head_refs="${git_dir}refs/heads/develop"
+head_refs="${git_dir}refs/heads/$target"
 
 $shjp "$event_path" -t commits | 
 $shjp -t tree_id > ${tmp}target_trees
@@ -25,34 +25,36 @@ before=$($shjp "$event_path" -t before)
 
 function main(){
 
-  remains=$(git log --pretty="%T %H" | 
+  remains="$(git log --pretty="%T %H" | 
   awk '{if($1=="'$before'"){flag=1};if(flag!=1){print $0};}' |
   tac |
   while read tchash; do
     tree=$(echo "$tchash" | cut -d " " -f 1)
     commit=$(echo "$tchash" | cut -d " " -f 2)
     [ -z "$(cat ${tmp}target_trees | grep -o $tree)" ] && printf "${commit} " || :
-  done )
+  done )"
   [ $? != 0 ] && end 1 || :
 
   git reset --hard $before
   git cherry-pick $remains
-  [ $? != 0 ] && end 1 || :
+  if [ $? != 0 ]; then
+    echo "Cherry-pick failed, it seems succeeding commits depend on this rollback target." >&2
+    end 1
+  fi
 }
 
 function checkDiff(){
   git fetch
-  diff -q ${tmp}head_refs_bk ${git_dir}refs/remotes/origin/develop 1>/dev/null
+  diff -q ${tmp}head_refs_bk ${git_dir}refs/remotes/origin/$target 1>/dev/null
 }
 
-git checkout develop
+git checkout $target
 cp $head_refs ${tmp}head_refs_bk
-
 main
 while ! checkDiff ; do
-  git checkout master
-  git branch -D develop
-  git checkout develop
+  git checkout mst
+  git branch -D $target
+  git checkout $target
   cp $head_refs ${tmp}head_refs_bk
   main
 done

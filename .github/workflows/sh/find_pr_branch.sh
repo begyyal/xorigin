@@ -29,7 +29,8 @@ done
 
 count=$(cat ${tmp}hits | wc -l)
 if [ $count = 0 ]; then
-    end 0
+    echo 'It is allowed only feature branch to push to stg branch.' >&2
+    end 1
 elif [ $count -gt 1 ]; then
     echo 'Some branches prefixed are found, it must be one.' >&2
     cat ${tmp}hits >&2
