@@ -36,20 +36,6 @@ jobs:
         do_test=$(./.github/workflows/sh/check_if_need_test.sh ${{ github.event.before }} ${{ github.event.after }})
         echo "::set-output name=do-test::${do_test:-false}"
 
-    - name: Set up JDK 15
-      if: ${{ steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
-      uses: actions/setup-java@v2
-      with:
-        java-version: '15'
-        distribution: 'adopt'
-
-    - name: Grant execute permission for gradlew
-      if: ${{ steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
-      run: |
-        chmod +x ./cmd/gradlew
-        ./cmd/gradlew build -b ./lib/build.gradle -x test
-        ./cmd/gradlew build -b ./cmd/build.gradle -x test
-
     - name: Test
       if: ${{ steps.cond1.outputs.do-test == 'true' || steps.cond2.outputs.do-test == 'true' }}
       run: ./test.sh
