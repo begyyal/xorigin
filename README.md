@@ -1,7 +1,6 @@
 - **CI**  
 [![sync-pr](https://github.com/begyyal/xorigin/actions/workflows/sync-pr.yml/badge.svg)](https://github.com/begyyal/xorigin/actions/workflows/sync-pr.yml)
-[![push-stg](https://github.com/begyyal/xorigin/actions/workflows/push-stg.yml/badge.svg)](https://github.com/begyyal/xorigin/actions/workflows/push-stg.yml)
-[![push-dev](https://github.com/begyyal/xorigin/actions/workflows/push-dev.yml/badge.svg)](https://github.com/begyyal/xorigin/actions/workflows/push-dev.yml)  
+[![push-stg](https://github.com/begyyal/xorigin/actions/workflows/push-stg.yml/badge.svg)](https://github.com/begyyal/xorigin/actions/workflows/push-stg.yml)  
 
 - **Development complements**  
 [![create-feature](https://github.com/begyyal/xorigin/actions/workflows/create-feature.yml/badge.svg)](https://github.com/begyyal/xorigin/actions/workflows/create-feature.yml)
