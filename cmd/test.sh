@@ -1,1 +1,0 @@
-./cmdbbt/start.sh --apt-get openjdk-17-jre-headless
