@@ -10,8 +10,8 @@
 - **その他**  
 [![push-tags](https://github.com/begyyal/xorigin/actions/workflows/push-tags.yml/badge.svg)](https://github.com/begyyal/xorigin/actions/workflows/push-tagse.yml)  
 
-# 概要
+# Overview
 
-汎用テンプレートリポジトリです。  
-一定の運用ルールを想定し、それに則したワークフロー構成を持っています。  
-詳細は[wiki](https://github.com/begyyal/xorigin/wiki)をご覧ください。  
+This is a basic template repository.  
+It assumes certain operational rules and has a system including workflow configurations that conforms to them.  
+Please see [wiki](https://github.com/begyyal/xorigin/wiki) for the details.
