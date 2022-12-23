@@ -18,12 +18,11 @@ jobs:
         token: ${{ secrets.PAT_REPO }}
 
     - name: Prepare conditions
-      id: ready
       run: |
         git config --global user.email "begyyal@gmail.com"
         git config --global user.name "begyyal-ghost"
         fb=$(./.github/workflows/sh/find_pr_branch.sh feature ${{ github.event_path }})
-        echo "::set-output name=issue-no::${fb#feature/}"
+        echo "issue-no=${fb#feature/}" >> $GITHUB_ENV
 
     - name: Test
       run: ./test.sh
@@ -36,22 +35,21 @@ jobs:
     - name: Revise and merge
       run: |
         ./.github/workflows/sh/merge_stg.sh \
-          "#${{ steps.ready.outputs.issue-no }}" \
+          "#${{ env.issue-no }}" \
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
           ${{ github.repository }} 
 
     - name: Prepare to close issue
-      id: ready-closing
       run: |
         git clone https://github.com/begyyal/act_access_ghra.git
         issue_url_base=${{ github.event.repository.issues_url }}
-        echo "::set-output name=issue-url::${issue_url_base%\{*}/${{steps.ready.outputs.issue-no}}"
+        echo "issue-url=${issue_url_base%\{*}/${{ env.issue-no }}" >> $GITHUB_ENV
 
     - name: Close issue
       uses: ./act_access_ghra
       with:
-        url: ${{ steps.ready-closing.outputs.issue-url }}
+        url: ${{ env.issue-url }}
         method: 'PATCH'
         args: '{"state":"closed"}'
 
