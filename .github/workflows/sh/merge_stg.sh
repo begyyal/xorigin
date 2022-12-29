@@ -107,7 +107,6 @@ git push origin dev
 
 git log origin/mst --pretty=%T > ${tmp}mst_trees
 mst_dup_flag=''; head=''; 
-remains="$(cat ${tmp}target_ct |
 while read commit tree; do
   if cat ${tmp}mst_trees | grep ^$tree 1>/dev/null ; then
     mst_dup_flag=1
@@ -116,7 +115,7 @@ while read commit tree; do
     head=${commit}
     printf "${commit} "
   fi
-done )"
+done < <(cat ${tmp}target_ct) > ${tmp}remains
 [ $? != 0 ] && end 1 || :
 
 curl \
@@ -126,12 +125,12 @@ curl \
   https://api.github.com/repos/${repos}/statuses/${head} \
   -d '{"state":"success","context":"ci-passed-mst"}'
 
-if [ -n "$remains" ]; then
+if [ -f ${tmp}remains ]; then
   git checkout mst
   if [ -z "$mst_dup_flag" ]; then
     git merge dev
   else
-    git cherry-pick "${remains}" 
+    git cherry-pick "$(cat ${tmp}remains)" 
   fi
   [ $? != 0 ] && end 1 || :
   git push origin mst
