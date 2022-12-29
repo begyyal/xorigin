@@ -38,7 +38,8 @@ jobs:
           "#${{ env.issue-no }}" \
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
-          ${{ github.repository }} 
+          ${{ github.repository }} \
+          ${{ github.token }}
 
     - name: Prepare to close issue
       run: |

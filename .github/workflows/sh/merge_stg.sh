@@ -16,6 +16,7 @@ prefix="$1"
 event_path=$2
 git_dir=$3
 repos=$4
+token=$5
 head_refs="${git_dir}refs/heads/stg"
 dev_head_refs="${git_dir}refs/heads/dev"
 
@@ -105,17 +106,25 @@ git push origin dev
 [ $? != 0 ] && end 1 || :
 
 git log origin/mst --pretty=%T > ${tmp}mst_trees
-mst_dup_flag=''
+mst_dup_flag=''; head=''; 
 remains="$(cat ${tmp}target_ct |
 while read commit tree; do
   if cat ${tmp}mst_trees | grep ^$tree 1>/dev/null ; then
     mst_dup_flag=1
     echo $commit" is skipped for merging to mst because the tree is duplicated." >&2
   else
+    head=${commit}
     printf "${commit} "
   fi
 done )"
 [ $? != 0 ] && end 1 || :
+
+curl \
+  -X POST \
+  -H "AUTHORIZATION: token ${token}" \
+  -H "Accept: application/vnd.github.v3+json" \
+  https://api.github.com/repos/${repos}/statuses/${head} \
+  -d '{"state":"success","context":"ci-passed-mst"}'
 
 if [ -n "$remains" ]; then
   git checkout mst
