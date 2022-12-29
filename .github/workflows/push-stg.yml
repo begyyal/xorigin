@@ -34,6 +34,7 @@ jobs:
 
     - name: Revise and merge
       run: |
+        echo "dev-before=$(git log origin/dev --pretty=%H | head -n1)" >> $GITHUB_ENV
         ./.github/workflows/sh/merge_stg.sh \
           "#${{ env.issue-no }}" \
           ${{ github.event_path }} \
@@ -61,4 +62,5 @@ jobs:
           ${{ github.event_path }} \
           "$(pwd)/.git/" \
           ${{ github.repository }} \
+          ${{ env.dev-before }} \
           stg

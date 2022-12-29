@@ -15,7 +15,8 @@ function end(){
 event_path=$1
 git_dir=$2
 repos=$3
-target=$4
+dev_before=$4
+target=$5
 head_refs="${git_dir}refs/heads/$target"
 
 $shjp "$event_path" -t commits | 
@@ -65,5 +66,12 @@ done
 
 git push origin HEAD -f
 [ $? != 0 ] && end 1 || :
+
+dev_now=$(git log origin/dev --pretty=%H | head -n1)
+if [ $dev_before != $dev_now ]; then
+  git checkout dev
+  git reset --hard $dev_before
+  git push origin dev -f
+fi
 
 end 0
