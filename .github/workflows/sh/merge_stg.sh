@@ -20,14 +20,15 @@ token=$5
 head_refs="${git_dir}refs/heads/stg"
 dev_head_refs="${git_dir}refs/heads/dev"
 
+last_tree="$(
 $shjp "$event_path" -t commits | 
-$shjp -t id,tree_id |
-awk '{if(NR%2==1){rec=$0}else{print rec" "$0}}' > ${tmp}target_ct
+$shjp -t tree_id |
+tee ${tmp}target_trees |
+tail -n 1)"
 [ $? != 0 ] && end 1 || :  
 
 before_commit=$($shjp "$event_path" -t before)
 before_tree=$(git log --pretty=%T "$before_commit" | head -n 1)
-last_tree=$(cat ${tmp}target_ct | cut -d " " -f 2 | tail -n 1)
 
 function main(){
 
@@ -50,7 +51,7 @@ function main(){
       [ -z $started ] && continue || :
     fi
 
-    target_flag=$(cat ${tmp}target_ct | cut -d " " -f 2 | grep ^$tree)
+    target_flag=$(cat ${tmp}target_trees | grep ^$tree)
     if [ -n $target_flag ]; then
       cat ${tmp}comments > ${tmp}comments_cp
       cat ${tmp}comments_cp | 
@@ -64,10 +65,13 @@ function main(){
     git reset --hard HEAD
     git commit --amend --author="$author" -C HEAD --allow-empty
     parent=$(cat $head_refs)
-    [ -n $target_flag ] && to=$parent || :
-  done
+    if [ -n $target_flag ]; then 
+      to=$parent
+      echo "$tree $parent"
+    fi
+  done > ${tmp}target_tc
+  [ $? != 0 ] && end 1 || :
 }
-[ $? != 0 ] && end 1 || :
 
 function checkDiff(){
   git fetch
@@ -107,7 +111,7 @@ git push origin dev
 
 git log origin/mst --pretty=%T > ${tmp}mst_trees
 mst_dup_flag=''; head=''; 
-while read commit tree; do
+while read tree commit; do
   if cat ${tmp}mst_trees | grep ^$tree 1>/dev/null ; then
     mst_dup_flag=1
     echo $commit" is skipped for merging to mst because the tree is duplicated." >&2
@@ -115,7 +119,7 @@ while read commit tree; do
     head=${commit}
     printf "${commit} "
   fi
-done < <(cat ${tmp}target_ct) > ${tmp}remains
+done < <(cat ${tmp}target_tc) > ${tmp}remains
 [ $? != 0 ] && end 1 || :
 
 curl \
