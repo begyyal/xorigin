@@ -37,5 +37,12 @@ git update-index --add --chmod=+x
 git update-index --add --chmod=+x ${cmd_dir}/test.sh
 [ $? != 0 ] && end 1 || : 
 
-git add . && git commit -m "init"
+git add . && git commit -m "init [skip ci]"
+if [ "$(git branch | wc -l)" == 1 ]; then
+  git checkout -b dev
+  git checkout -b stg
+  git checkout mst
+  git push origin dev stg -f
+fi
+git push origin HEAD
 end 0
