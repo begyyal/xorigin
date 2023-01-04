@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cmd_dir=`dirname $0`
 source ${cmd_dir}/commons.sh
 
 prefix="$1"

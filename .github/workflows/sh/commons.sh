@@ -4,7 +4,6 @@ tmp_dir='/tmp/'$(date +%Y%m%d%H%M%S)
 mkdir -p $tmp_dir
 tmp=${tmp_dir}'/'$$'_'
 
-cmd_dir=`dirname $0`
 shjp=${cmd_dir}/shjp
 
 function end(){
