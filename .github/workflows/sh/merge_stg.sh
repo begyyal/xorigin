@@ -44,7 +44,7 @@ function main(){
     fi
 
     target_flag=$(cat ${tmp}target_trees | grep ^$tree)
-    if [ -n $target_flag ]; then
+    if [ -n "$target_flag" ]; then
       cat ${tmp}comments > ${tmp}comments_cp
       cat ${tmp}comments_cp | 
       awk -v prefix="${prefix} " '{if(NR==1 && $0 !~ /^('$prefix').*$/){print prefix $0}else{print}}' > ${tmp}comments 
@@ -57,7 +57,7 @@ function main(){
     git reset --hard HEAD
     git commit --amend --author="$author" -C HEAD --allow-empty
     parent=$(cat $head_refs)
-    if [ -n $target_flag ]; then 
+    if [ -n "$target_flag" ]; then 
       to=$parent
       echo "$tree $parent" > ${tmp}target_tc
     fi
